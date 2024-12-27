@@ -816,6 +816,7 @@ static CK_RV slot_login(P11PROV_SLOT *slot, P11PROV_URI *uri,
     }
 
     /* we acquired the session, check that it is ok */
+    p11prov_set_error_mark(pool->provctx);
     ret = session_check(session, session->flags);
     if (ret != CKR_OK) {
         num_open_sessions--;
@@ -825,9 +826,13 @@ static CK_RV slot_login(P11PROV_SLOT *slot, P11PROV_URI *uri,
         ret = token_session_open(session, flags);
         if (ret == CKR_OK) {
             num_open_sessions++;
+            p11prov_pop_error_to_mark(pool->provctx);
         } else {
+            p11prov_clear_last_error_mark(pool->provctx);
             goto done;
         }
+    } else {
+        p11prov_clear_last_error_mark(pool->provctx);
     }
 
     if (is_login_state(session->state)) {
@@ -1017,6 +1022,7 @@ CK_RV p11prov_get_session(P11PROV_CTX *provctx, CK_SLOT_ID *slotid,
 
     ret = fetch_session(pool, flags, false, &session);
     if (ret == CKR_OK) {
+        p11prov_set_error_mark(pool->provctx);
         ret = session_check(session, flags);
         if (ret != CKR_OK) {
             num_open_sessions--;
@@ -1026,8 +1032,11 @@ CK_RV p11prov_get_session(P11PROV_CTX *provctx, CK_SLOT_ID *slotid,
             ret = token_session_open(session, flags);
             if (ret == CKR_OK) {
                 num_open_sessions++;
+                p11prov_pop_error_to_mark(pool->provctx);
+                goto done;
             }
         }
+        p11prov_clear_last_error_mark(pool->provctx);
     }
 
 done:
