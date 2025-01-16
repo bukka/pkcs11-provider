@@ -1061,7 +1061,7 @@ CK_RV p11prov_take_login_session(P11PROV_CTX *provctx, CK_SLOT_ID slotid,
     int slot_idx = 0;
     CK_RV ret;
 
-    P11PROV_debug("Get login session from slot %lu", slotid);
+    P11PROV_debug("Get login session from slot %lu, uri=%p", slotid, uri);
 
     ret = p11prov_take_slots(provctx, &slots);
     if (ret != CKR_OK) {
