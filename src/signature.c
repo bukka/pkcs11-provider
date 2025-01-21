@@ -827,7 +827,8 @@ static CK_RV p11prov_sig_operate_init(P11PROV_SIG_CTX *sigctx, bool digest_op,
         reqlogin = true;
     }
 
-    ret = p11prov_get_session(sigctx->provctx, &slotid, NULL, NULL,
+    ret = p11prov_get_session(sigctx->provctx, &slotid, NULL,
+                              p11prov_obj_get_uri(sigctx->key),
                               mechanism.mechanism, NULL, NULL, reqlogin, false,
                               &session);
     switch (ret) {

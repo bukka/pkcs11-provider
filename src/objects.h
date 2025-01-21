@@ -21,6 +21,7 @@ P11PROV_OBJ *p11prov_obj_ref_no_cache(P11PROV_OBJ *obj);
 P11PROV_OBJ *p11prov_obj_ref(P11PROV_OBJ *obj);
 void p11prov_obj_free(P11PROV_OBJ *obj);
 CK_SLOT_ID p11prov_obj_get_slotid(P11PROV_OBJ *obj);
+P11PROV_URI *p11prov_obj_get_uri(P11PROV_OBJ *obj);
 CK_OBJECT_HANDLE p11prov_obj_get_handle(P11PROV_OBJ *obj);
 CK_OBJECT_CLASS p11prov_obj_get_class(P11PROV_OBJ *obj);
 CK_ATTRIBUTE *p11prov_obj_get_attr(P11PROV_OBJ *obj, CK_ATTRIBUTE_TYPE type);

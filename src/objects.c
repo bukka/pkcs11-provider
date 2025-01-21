@@ -467,6 +467,14 @@ CK_SLOT_ID p11prov_obj_get_slotid(P11PROV_OBJ *obj)
     return CK_UNAVAILABLE_INFORMATION;
 }
 
+P11PROV_URI *p11prov_obj_get_uri(P11PROV_OBJ *obj)
+{
+    if (obj) {
+        return obj->refresh_uri;
+    }
+    return NULL;
+}
+
 static void p11prov_obj_refresh(P11PROV_OBJ *obj);
 
 CK_OBJECT_HANDLE p11prov_obj_get_handle(P11PROV_OBJ *obj)
