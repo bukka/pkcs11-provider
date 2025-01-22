@@ -32,6 +32,7 @@ struct p11prov_crt {
 struct p11prov_obj {
     P11PROV_CTX *ctx;
     bool raf; /* re-init after fork */
+    bool imported;
 
     CK_SLOT_ID slotid;
     CK_OBJECT_HANDLE handle;
@@ -498,6 +499,8 @@ CK_OBJECT_HANDLE p11prov_obj_get_handle(P11PROV_OBJ *obj)
             if (rv != CKR_OK) {
                 return CK_INVALID_HANDLE;
             }
+            /* mark object as imported so it can be correctly reloaded */
+            obj->imported = true;
         }
         return obj->handle;
     }
@@ -1252,6 +1255,15 @@ static void p11prov_obj_refresh(P11PROV_OBJ *obj)
     }
 
     sess = p11prov_session_handle(session);
+
+    if (obj->imported) {
+        ret = p11prov_obj_store_public_key(obj);
+        if (ret != CKR_OK) {
+            P11PROV_raise(obj->ctx, ret,
+                          "Failed to refresh imported object %p", obj);
+        }
+        goto done;
+    }
 
     anum = 0;
     CKATTR_ASSIGN(template[anum], CKA_CLASS, &(obj->class), sizeof(obj->class));
