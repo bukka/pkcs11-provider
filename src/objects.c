@@ -192,8 +192,9 @@ static CK_RV obj_add_to_pool(P11PROV_OBJ *obj)
         pool->first_free = 0;
     }
 
+    int idx;
     for (int i = 0; i < pool->size; i++) {
-        int idx = (i + pool->first_free) % pool->size;
+        idx = (i + pool->first_free) % pool->size;
         if (pool->objects[idx] == NULL) {
             pool->objects[idx] = obj;
             pool->num++;
@@ -212,6 +213,12 @@ static CK_RV obj_add_to_pool(P11PROV_OBJ *obj)
 done:
     (void)MUTEX_UNLOCK(pool);
     /* ------------- LOCKED SECTION */
+
+    if (ret != CKR_GENERAL_ERROR) {
+        P11PROV_debug(
+            "Object added to pool (idx=%d, first_free=%d, obj=%p, num=%d)",
+            idx, pool->first_free, obj, pool->num);
+    }
 
     return ret;
 }
@@ -237,22 +244,35 @@ static void obj_rm_from_pool(P11PROV_OBJ *obj)
     }
 
     /* LOCKED SECTION ------------- */
-    if (obj->poolid >= pool->size || pool->objects[obj->poolid] != obj) {
+    int idx = obj->poolid;
+    if (idx >= pool->size || pool->objects[idx] != obj) {
         ret = CKR_GENERAL_ERROR;
-        P11PROV_raise(pool->provctx, ret, "Objects pool in inconsistent state");
+        if (obj->poolid >= pool->size) {
+            P11PROV_raise(pool->provctx, ret,
+                          "Objects pool in inconsistent state - small pool "
+                          "(idx=%d, size=%d)", idx, pool->size);
+        } else {
+            P11PROV_raise(pool->provctx, ret,
+                          "Objects pool in inconsistent state - obj already "
+                          "removed (idx=%d, pool_obj=%p, obj=%p)", idx,
+                          pool->objects[idx], obj);
+        }
         goto done;
     }
 
-    pool->objects[obj->poolid] = NULL;
+    pool->objects[idx] = NULL;
     pool->num--;
-    if (pool->first_free > obj->poolid) {
-        pool->first_free = obj->poolid;
+    if (pool->first_free > idx) {
+        pool->first_free = idx;
     }
     obj->poolid = 0;
 
 done:
     (void)MUTEX_UNLOCK(pool);
     /* ------------- LOCKED SECTION */
+
+    P11PROV_debug("Object removed from pool (idx=%d, first_free=%d, obj=%p)",
+                  idx, pool->first_free, obj);
 }
 
 static CK_RV p11prov_obj_store_public_key(P11PROV_OBJ *key);
