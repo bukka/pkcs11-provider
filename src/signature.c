@@ -1003,7 +1003,8 @@ static CK_RV p11prov_sig_operate(P11PROV_SIG_CTX *sigctx, unsigned char *sig,
     p11prov_set_error_mark(sigctx->provctx);
     ret = p11prov_sig_operate_init(sigctx, false, &session);
     if (ret != CKR_OK) {
-        if (ret == CKR_OBJECT_HANDLE_INVALID && p11prov_obj_refresh_invalid(sigctx->key) == CKR_OK) {
+        if ((ret == CKR_OBJECT_HANDLE_INVALID || ret == CKR_SIGNATURE_LEN_RANGE)
+            && p11prov_obj_refresh_invalid(sigctx->key) == CKR_OK) {
             ret = p11prov_sig_operate_init(sigctx, false, &session);
         }
         if (ret != CKR_OK) {
