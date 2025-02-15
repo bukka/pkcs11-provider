@@ -23,7 +23,7 @@ void p11prov_debug_init(void)
     const char *env = getenv("PKCS11_PROVIDER_DEBUG");
     const char *next;
     char fname[1024];
-    int dbg_level = 0, dbg_time = 0;
+    int dbg_level = 0, dbg_time = 1;
     int orig;
     if (env) {
         do {
