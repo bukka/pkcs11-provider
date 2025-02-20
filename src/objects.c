@@ -215,7 +215,7 @@ done:
     (void)MUTEX_UNLOCK(pool);
     /* ------------- LOCKED SECTION */
 
-    if (ret != CKR_GENERAL_ERROR) {
+    if (ret == CKR_OK) {
         P11PROV_debug(
             "Object added to pool (idx=%d, first_free=%d, obj=%p, num=%d)",
             idx, pool->first_free, obj, pool->num);
@@ -272,8 +272,11 @@ done:
     (void)MUTEX_UNLOCK(pool);
     /* ------------- LOCKED SECTION */
 
-    P11PROV_debug("Object removed from pool (idx=%d, first_free=%d, obj=%p)",
-                  idx, pool->first_free, obj);
+    if (ret == CKR_OK) {
+        P11PROV_debug(
+            "Object removed from pool (idx=%d, first_free=%d, obj=%p)",
+            idx, pool->first_free, obj);
+    }
 }
 
 static CK_RV p11prov_obj_store_public_key(P11PROV_OBJ *key);
@@ -3398,9 +3401,9 @@ static CK_RV return_dup_key(P11PROV_OBJ *dst, P11PROV_OBJ *src)
     CK_RV rv;
 
     P11PROV_debug("duplicating obj key (dst=%p, src=%p, handle=%lu, "
-                  "slotid=%lu, raf=%d, imported=%d, numattrs=%d, slotid=%lu)",
-                  dst, src, src->handle, src->raf, src->imported,
-                  src->numattrs, src->slotid);
+                  "slotid=%lu, raf=%d, imported=%d, numattrs=%d)",
+                  dst, src, src->handle, src->slotid, src->raf,
+                  src->imported, src->numattrs);
 
     dst->slotid = src->slotid;
     dst->handle = src->handle;
