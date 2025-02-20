@@ -3489,6 +3489,7 @@ static CK_RV p11prov_obj_import_public_key(P11PROV_OBJ *key, CK_KEY_TYPE type,
 
     switch (type) {
     case CKK_RSA:
+        P11PROV_debug("obj import of RSA public key %p", key);
         rv = prep_rsa_find(ctx, params, &findctx);
         if (rv != CKR_OK) {
             goto done;
@@ -3497,6 +3498,7 @@ static CK_RV p11prov_obj_import_public_key(P11PROV_OBJ *key, CK_KEY_TYPE type,
         break;
 
     case CKK_EC:
+        P11PROV_debug("obj import of EC public key %p", key);
         rv = prep_ec_find(ctx, params, &findctx);
         if (rv != CKR_OK) {
             goto done;
@@ -3505,6 +3507,7 @@ static CK_RV p11prov_obj_import_public_key(P11PROV_OBJ *key, CK_KEY_TYPE type,
         break;
 
     case CKK_EC_EDWARDS:
+        P11PROV_debug("obj import of ED public key %p", key);
         rv = prep_ed_find(ctx, params, &findctx);
         if (rv != CKR_OK) {
             goto done;
