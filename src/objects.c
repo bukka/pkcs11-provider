@@ -3397,6 +3397,9 @@ static CK_RV return_dup_key(P11PROV_OBJ *dst, P11PROV_OBJ *src)
 {
     CK_RV rv;
 
+    P11PROV_debug("duplicating obj key (dst=%p, src=%p, handle=%lu)", dst,
+                  src, src->handle);
+
     dst->slotid = src->slotid;
     dst->handle = src->handle;
     dst->class = src->class;
