@@ -3397,8 +3397,10 @@ static CK_RV return_dup_key(P11PROV_OBJ *dst, P11PROV_OBJ *src)
 {
     CK_RV rv;
 
-    P11PROV_debug("duplicating obj key (dst=%p, src=%p, handle=%lu)", dst,
-                  src, src->handle);
+    P11PROV_debug("duplicating obj key (dst=%p, src=%p, handle=%lu, "
+                  "slotid=%lu, raf=%d, imported=%d, numattrs=%d, slotid=%lu)",
+                  dst, src, src->handle, src->raf, src->imported,
+                  src->numattrs, src->slotid);
 
     dst->slotid = src->slotid;
     dst->handle = src->handle;
@@ -3468,6 +3470,8 @@ static CK_RV fix_ec_key_import(P11PROV_OBJ *key, int allocattrs)
     key->attrs[key->numattrs].pValue = der;
     key->attrs[key->numattrs].ulValueLen = len;
     key->numattrs++;
+
+    P11PROV_debug("fixing EC key %p import", key);
 
     return CKR_OK;
 }
@@ -3558,6 +3562,7 @@ static CK_RV p11prov_obj_import_public_key(P11PROV_OBJ *key, CK_KEY_TYPE type,
      * the key can be imported on the fly in the correct slot at the time the
      * operation needs to be performed.
      */
+    P11PROV_debug("public key %p not found in the pool - using mock", key);
 
     /* move data */
     key->class = findctx.class;
