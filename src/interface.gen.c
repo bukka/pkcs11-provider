@@ -20,6 +20,9 @@ CK_RV p11prov_Initialize(P11PROV_CTX *ctx, CK_VOID_PTR pInitArgs)
         P11PROV_debug("Error %ld returned by C_"
                       "Initialize",
                       ret);
+        if (ret == CKR_DEVICE_ERROR || ret == CKR_DEVICE_REMOVED) {
+            p11prov_reinit(false);
+        }
     }
     return ret;
 }
@@ -43,6 +46,9 @@ CK_RV p11prov_Finalize(P11PROV_CTX *ctx, CK_VOID_PTR pReserved)
         P11PROV_debug("Error %ld returned by C_"
                       "Finalize",
                       ret);
+        if (ret == CKR_DEVICE_ERROR || ret == CKR_DEVICE_REMOVED) {
+            p11prov_reinit(false);
+        }
     }
     return ret;
 }
@@ -66,6 +72,9 @@ CK_RV p11prov_GetInfo(P11PROV_CTX *ctx, CK_INFO_PTR pInfo)
         P11PROV_debug("Error %ld returned by C_"
                       "GetInfo",
                       ret);
+        if (ret == CKR_DEVICE_ERROR || ret == CKR_DEVICE_REMOVED) {
+            p11prov_reinit(false);
+        }
     }
     return ret;
 }
@@ -91,6 +100,9 @@ CK_RV p11prov_GetInterface(P11PROV_CTX *ctx, CK_UTF8CHAR_PTR pInterfaceName,
         P11PROV_debug("Error %ld returned by C_"
                       "GetInterface",
                       ret);
+        if (ret == CKR_DEVICE_ERROR || ret == CKR_DEVICE_REMOVED) {
+            p11prov_reinit(false);
+        }
     }
     return ret;
 }
@@ -115,6 +127,9 @@ CK_RV p11prov_GetFunctionList(P11PROV_CTX *ctx,
         P11PROV_debug("Error %ld returned by C_"
                       "GetFunctionList",
                       ret);
+        if (ret == CKR_DEVICE_ERROR || ret == CKR_DEVICE_REMOVED) {
+            p11prov_reinit(false);
+        }
     }
     return ret;
 }
@@ -139,6 +154,9 @@ CK_RV p11prov_GetSlotList(P11PROV_CTX *ctx, CK_BBOOL tokenPresent,
         P11PROV_debug("Error %ld returned by C_"
                       "GetSlotList",
                       ret);
+        if (ret == CKR_DEVICE_ERROR || ret == CKR_DEVICE_REMOVED) {
+            p11prov_reinit(false);
+        }
     }
     return ret;
 }
@@ -163,6 +181,9 @@ CK_RV p11prov_GetSlotInfo(P11PROV_CTX *ctx, CK_SLOT_ID slotID,
         P11PROV_debug("Error %ld returned by C_"
                       "GetSlotInfo",
                       ret);
+        if (ret == CKR_DEVICE_ERROR || ret == CKR_DEVICE_REMOVED) {
+            p11prov_reinit(false);
+        }
     }
     return ret;
 }
@@ -187,6 +208,9 @@ CK_RV p11prov_GetTokenInfo(P11PROV_CTX *ctx, CK_SLOT_ID slotID,
         P11PROV_debug("Error %ld returned by C_"
                       "GetTokenInfo",
                       ret);
+        if (ret == CKR_DEVICE_ERROR || ret == CKR_DEVICE_REMOVED) {
+            p11prov_reinit(false);
+        }
     }
     return ret;
 }
@@ -212,6 +236,9 @@ CK_RV p11prov_GetMechanismList(P11PROV_CTX *ctx, CK_SLOT_ID slotID,
         P11PROV_debug("Error %ld returned by C_"
                       "GetMechanismList",
                       ret);
+        if (ret == CKR_DEVICE_ERROR || ret == CKR_DEVICE_REMOVED) {
+            p11prov_reinit(false);
+        }
     }
     return ret;
 }
@@ -237,6 +264,9 @@ CK_RV p11prov_GetMechanismInfo(P11PROV_CTX *ctx, CK_SLOT_ID slotID,
         P11PROV_debug("Error %ld returned by C_"
                       "GetMechanismInfo",
                       ret);
+        if (ret == CKR_DEVICE_ERROR || ret == CKR_DEVICE_REMOVED) {
+            p11prov_reinit(false);
+        }
     }
     return ret;
 }
@@ -262,6 +292,9 @@ CK_RV p11prov_OpenSession(P11PROV_CTX *ctx, CK_SLOT_ID slotID, CK_FLAGS flags,
         P11PROV_debug("Error %ld returned by C_"
                       "OpenSession",
                       ret);
+        if (ret == CKR_DEVICE_ERROR || ret == CKR_DEVICE_REMOVED) {
+            p11prov_reinit(false);
+        }
     }
     return ret;
 }
@@ -285,6 +318,9 @@ CK_RV p11prov_CloseSession(P11PROV_CTX *ctx, CK_SESSION_HANDLE hSession)
         P11PROV_debug("Error %ld returned by C_"
                       "CloseSession",
                       ret);
+        if (ret == CKR_DEVICE_ERROR || ret == CKR_DEVICE_REMOVED) {
+            p11prov_reinit(false);
+        }
     }
     return ret;
 }
@@ -309,6 +345,9 @@ CK_RV p11prov_GetSessionInfo(P11PROV_CTX *ctx, CK_SESSION_HANDLE hSession,
         P11PROV_debug("Error %ld returned by C_"
                       "GetSessionInfo",
                       ret);
+        if (ret == CKR_DEVICE_ERROR || ret == CKR_DEVICE_REMOVED) {
+            p11prov_reinit(false);
+        }
     }
     return ret;
 }
@@ -335,6 +374,9 @@ CK_RV p11prov_GetOperationState(P11PROV_CTX *ctx, CK_SESSION_HANDLE hSession,
         P11PROV_debug("Error %ld returned by C_"
                       "GetOperationState",
                       ret);
+        if (ret == CKR_DEVICE_ERROR || ret == CKR_DEVICE_REMOVED) {
+            p11prov_reinit(false);
+        }
     }
     return ret;
 }
@@ -364,6 +406,9 @@ CK_RV p11prov_SetOperationState(P11PROV_CTX *ctx, CK_SESSION_HANDLE hSession,
         P11PROV_debug("Error %ld returned by C_"
                       "SetOperationState",
                       ret);
+        if (ret == CKR_DEVICE_ERROR || ret == CKR_DEVICE_REMOVED) {
+            p11prov_reinit(false);
+        }
     }
     return ret;
 }
@@ -389,6 +434,9 @@ CK_RV p11prov_Login(P11PROV_CTX *ctx, CK_SESSION_HANDLE hSession,
         P11PROV_debug("Error %ld returned by C_"
                       "Login",
                       ret);
+        if (ret == CKR_DEVICE_ERROR || ret == CKR_DEVICE_REMOVED) {
+            p11prov_reinit(false);
+        }
     }
     return ret;
 }
@@ -414,6 +462,9 @@ CK_RV p11prov_CreateObject(P11PROV_CTX *ctx, CK_SESSION_HANDLE hSession,
         P11PROV_debug("Error %ld returned by C_"
                       "CreateObject",
                       ret);
+        if (ret == CKR_DEVICE_ERROR || ret == CKR_DEVICE_REMOVED) {
+            p11prov_reinit(false);
+        }
     }
     return ret;
 }
@@ -439,6 +490,9 @@ CK_RV p11prov_CopyObject(P11PROV_CTX *ctx, CK_SESSION_HANDLE hSession,
         P11PROV_debug("Error %ld returned by C_"
                       "CopyObject",
                       ret);
+        if (ret == CKR_DEVICE_ERROR || ret == CKR_DEVICE_REMOVED) {
+            p11prov_reinit(false);
+        }
     }
     return ret;
 }
@@ -463,6 +517,9 @@ CK_RV p11prov_DestroyObject(P11PROV_CTX *ctx, CK_SESSION_HANDLE hSession,
         P11PROV_debug("Error %ld returned by C_"
                       "DestroyObject",
                       ret);
+        if (ret == CKR_DEVICE_ERROR || ret == CKR_DEVICE_REMOVED) {
+            p11prov_reinit(false);
+        }
     }
     return ret;
 }
@@ -488,6 +545,9 @@ CK_RV p11prov_GetAttributeValue(P11PROV_CTX *ctx, CK_SESSION_HANDLE hSession,
         P11PROV_debug("Error %ld returned by C_"
                       "GetAttributeValue",
                       ret);
+        if (ret == CKR_DEVICE_ERROR || ret == CKR_DEVICE_REMOVED) {
+            p11prov_reinit(false);
+        }
     }
     return ret;
 }
@@ -513,6 +573,9 @@ CK_RV p11prov_SetAttributeValue(P11PROV_CTX *ctx, CK_SESSION_HANDLE hSession,
         P11PROV_debug("Error %ld returned by C_"
                       "SetAttributeValue",
                       ret);
+        if (ret == CKR_DEVICE_ERROR || ret == CKR_DEVICE_REMOVED) {
+            p11prov_reinit(false);
+        }
     }
     return ret;
 }
@@ -537,6 +600,9 @@ CK_RV p11prov_FindObjectsInit(P11PROV_CTX *ctx, CK_SESSION_HANDLE hSession,
         P11PROV_debug("Error %ld returned by C_"
                       "FindObjectsInit",
                       ret);
+        if (ret == CKR_DEVICE_ERROR || ret == CKR_DEVICE_REMOVED) {
+            p11prov_reinit(false);
+        }
     }
     return ret;
 }
@@ -564,6 +630,9 @@ CK_RV p11prov_FindObjects(P11PROV_CTX *ctx, CK_SESSION_HANDLE hSession,
         P11PROV_debug("Error %ld returned by C_"
                       "FindObjects",
                       ret);
+        if (ret == CKR_DEVICE_ERROR || ret == CKR_DEVICE_REMOVED) {
+            p11prov_reinit(false);
+        }
     }
     return ret;
 }
@@ -587,6 +656,9 @@ CK_RV p11prov_FindObjectsFinal(P11PROV_CTX *ctx, CK_SESSION_HANDLE hSession)
         P11PROV_debug("Error %ld returned by C_"
                       "FindObjectsFinal",
                       ret);
+        if (ret == CKR_DEVICE_ERROR || ret == CKR_DEVICE_REMOVED) {
+            p11prov_reinit(false);
+        }
     }
     return ret;
 }
@@ -611,6 +683,9 @@ CK_RV p11prov_EncryptInit(P11PROV_CTX *ctx, CK_SESSION_HANDLE hSession,
         P11PROV_debug("Error %ld returned by C_"
                       "EncryptInit",
                       ret);
+        if (ret == CKR_DEVICE_ERROR || ret == CKR_DEVICE_REMOVED) {
+            p11prov_reinit(false);
+        }
     }
     return ret;
 }
@@ -638,6 +713,9 @@ CK_RV p11prov_Encrypt(P11PROV_CTX *ctx, CK_SESSION_HANDLE hSession,
         P11PROV_debug("Error %ld returned by C_"
                       "Encrypt",
                       ret);
+        if (ret == CKR_DEVICE_ERROR || ret == CKR_DEVICE_REMOVED) {
+            p11prov_reinit(false);
+        }
     }
     return ret;
 }
@@ -662,6 +740,9 @@ CK_RV p11prov_DecryptInit(P11PROV_CTX *ctx, CK_SESSION_HANDLE hSession,
         P11PROV_debug("Error %ld returned by C_"
                       "DecryptInit",
                       ret);
+        if (ret == CKR_DEVICE_ERROR || ret == CKR_DEVICE_REMOVED) {
+            p11prov_reinit(false);
+        }
     }
     return ret;
 }
@@ -688,6 +769,9 @@ CK_RV p11prov_Decrypt(P11PROV_CTX *ctx, CK_SESSION_HANDLE hSession,
         P11PROV_debug("Error %ld returned by C_"
                       "Decrypt",
                       ret);
+        if (ret == CKR_DEVICE_ERROR || ret == CKR_DEVICE_REMOVED) {
+            p11prov_reinit(false);
+        }
     }
     return ret;
 }
@@ -712,6 +796,9 @@ CK_RV p11prov_DigestInit(P11PROV_CTX *ctx, CK_SESSION_HANDLE hSession,
         P11PROV_debug("Error %ld returned by C_"
                       "DigestInit",
                       ret);
+        if (ret == CKR_DEVICE_ERROR || ret == CKR_DEVICE_REMOVED) {
+            p11prov_reinit(false);
+        }
     }
     return ret;
 }
@@ -736,6 +823,9 @@ CK_RV p11prov_DigestUpdate(P11PROV_CTX *ctx, CK_SESSION_HANDLE hSession,
         P11PROV_debug("Error %ld returned by C_"
                       "DigestUpdate",
                       ret);
+        if (ret == CKR_DEVICE_ERROR || ret == CKR_DEVICE_REMOVED) {
+            p11prov_reinit(false);
+        }
     }
     return ret;
 }
@@ -760,6 +850,9 @@ CK_RV p11prov_DigestFinal(P11PROV_CTX *ctx, CK_SESSION_HANDLE hSession,
         P11PROV_debug("Error %ld returned by C_"
                       "DigestFinal",
                       ret);
+        if (ret == CKR_DEVICE_ERROR || ret == CKR_DEVICE_REMOVED) {
+            p11prov_reinit(false);
+        }
     }
     return ret;
 }
@@ -784,6 +877,9 @@ CK_RV p11prov_SignInit(P11PROV_CTX *ctx, CK_SESSION_HANDLE hSession,
         P11PROV_debug("Error %ld returned by C_"
                       "SignInit",
                       ret);
+        if (ret == CKR_DEVICE_ERROR || ret == CKR_DEVICE_REMOVED) {
+            p11prov_reinit(false);
+        }
     }
     return ret;
 }
@@ -809,6 +905,9 @@ CK_RV p11prov_Sign(P11PROV_CTX *ctx, CK_SESSION_HANDLE hSession,
         P11PROV_debug("Error %ld returned by C_"
                       "Sign",
                       ret);
+        if (ret == CKR_DEVICE_ERROR || ret == CKR_DEVICE_REMOVED) {
+            p11prov_reinit(false);
+        }
     }
     return ret;
 }
@@ -833,6 +932,9 @@ CK_RV p11prov_SignUpdate(P11PROV_CTX *ctx, CK_SESSION_HANDLE hSession,
         P11PROV_debug("Error %ld returned by C_"
                       "SignUpdate",
                       ret);
+        if (ret == CKR_DEVICE_ERROR || ret == CKR_DEVICE_REMOVED) {
+            p11prov_reinit(false);
+        }
     }
     return ret;
 }
@@ -857,6 +959,9 @@ CK_RV p11prov_SignFinal(P11PROV_CTX *ctx, CK_SESSION_HANDLE hSession,
         P11PROV_debug("Error %ld returned by C_"
                       "SignFinal",
                       ret);
+        if (ret == CKR_DEVICE_ERROR || ret == CKR_DEVICE_REMOVED) {
+            p11prov_reinit(false);
+        }
     }
     return ret;
 }
@@ -881,6 +986,9 @@ CK_RV p11prov_VerifyInit(P11PROV_CTX *ctx, CK_SESSION_HANDLE hSession,
         P11PROV_debug("Error %ld returned by C_"
                       "VerifyInit",
                       ret);
+        if (ret == CKR_DEVICE_ERROR || ret == CKR_DEVICE_REMOVED) {
+            p11prov_reinit(false);
+        }
     }
     return ret;
 }
@@ -906,6 +1014,9 @@ CK_RV p11prov_Verify(P11PROV_CTX *ctx, CK_SESSION_HANDLE hSession,
         P11PROV_debug("Error %ld returned by C_"
                       "Verify",
                       ret);
+        if (ret == CKR_DEVICE_ERROR || ret == CKR_DEVICE_REMOVED) {
+            p11prov_reinit(false);
+        }
     }
     return ret;
 }
@@ -930,6 +1041,9 @@ CK_RV p11prov_VerifyUpdate(P11PROV_CTX *ctx, CK_SESSION_HANDLE hSession,
         P11PROV_debug("Error %ld returned by C_"
                       "VerifyUpdate",
                       ret);
+        if (ret == CKR_DEVICE_ERROR || ret == CKR_DEVICE_REMOVED) {
+            p11prov_reinit(false);
+        }
     }
     return ret;
 }
@@ -954,6 +1068,9 @@ CK_RV p11prov_VerifyFinal(P11PROV_CTX *ctx, CK_SESSION_HANDLE hSession,
         P11PROV_debug("Error %ld returned by C_"
                       "VerifyFinal",
                       ret);
+        if (ret == CKR_DEVICE_ERROR || ret == CKR_DEVICE_REMOVED) {
+            p11prov_reinit(false);
+        }
     }
     return ret;
 }
@@ -984,6 +1101,9 @@ CK_RV p11prov_GenerateKeyPair(
         P11PROV_debug("Error %ld returned by C_"
                       "GenerateKeyPair",
                       ret);
+        if (ret == CKR_DEVICE_ERROR || ret == CKR_DEVICE_REMOVED) {
+            p11prov_reinit(false);
+        }
     }
     return ret;
 }
@@ -1011,6 +1131,9 @@ CK_RV p11prov_DeriveKey(P11PROV_CTX *ctx, CK_SESSION_HANDLE hSession,
         P11PROV_debug("Error %ld returned by C_"
                       "DeriveKey",
                       ret);
+        if (ret == CKR_DEVICE_ERROR || ret == CKR_DEVICE_REMOVED) {
+            p11prov_reinit(false);
+        }
     }
     return ret;
 }
@@ -1035,6 +1158,9 @@ CK_RV p11prov_SeedRandom(P11PROV_CTX *ctx, CK_SESSION_HANDLE hSession,
         P11PROV_debug("Error %ld returned by C_"
                       "SeedRandom",
                       ret);
+        if (ret == CKR_DEVICE_ERROR || ret == CKR_DEVICE_REMOVED) {
+            p11prov_reinit(false);
+        }
     }
     return ret;
 }
@@ -1059,6 +1185,9 @@ CK_RV p11prov_GenerateRandom(P11PROV_CTX *ctx, CK_SESSION_HANDLE hSession,
         P11PROV_debug("Error %ld returned by C_"
                       "GenerateRandom",
                       ret);
+        if (ret == CKR_DEVICE_ERROR || ret == CKR_DEVICE_REMOVED) {
+            p11prov_reinit(false);
+        }
     }
     return ret;
 }

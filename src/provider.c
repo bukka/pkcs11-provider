@@ -15,6 +15,7 @@ struct p11prov_ctx {
         P11PROV_UNINITIALIZED = 0,
         P11PROV_INITIALIZED,
         P11PROV_NEEDS_REINIT,
+        P11PROV_DEINIT,
         P11PROV_NO_DEINIT,
         P11PROV_IN_ERROR,
     } status;
@@ -76,6 +77,43 @@ static struct p11prov_context_pool {
     .rwlock = PTHREAD_RWLOCK_INITIALIZER,
 };
 
+void p11prov_reinit(bool fork)
+{
+    int err;
+
+    /* rwlock, saves TID internally, so we need to reset
+     * after fork in the child */
+    p11prov_force_rwlock_reinit(&ctx_pool.rwlock);
+
+    /* If this is running in the fork handler, there should be no
+     * way to have other threads running, so this is mainly for
+     * device error handling or just in case some
+     * crazy library creates threads in their child handler */
+    err = pthread_rwlock_wrlock(&ctx_pool.rwlock);
+    if (err != 0) {
+        err = errno;
+        P11PROV_debug("Failed to get slots lock (errno:%d)", err);
+        return;
+    }
+
+    for (int i = 0; i < ctx_pool.num; i++) {
+        if (ctx_pool.contexts[i]->status == P11PROV_INITIALIZED) {
+            if (fork) {
+                /* can't re-init in the fork handler, mark it */
+                ctx_pool.contexts[i]->status = P11PROV_NEEDS_REINIT;
+            }
+            p11prov_module_mark_reinit(ctx_pool.contexts[i]->module);
+            p11prov_slot_fork_reset(ctx_pool.contexts[i]->slots);
+        }
+    }
+
+    err = pthread_rwlock_unlock(&ctx_pool.rwlock);
+    if (err != 0) {
+        err = errno;
+        P11PROV_debug("Failed to release context pool (errno:%d)", err);
+    }
+}
+
 static void fork_prepare(void)
 {
     int err;
@@ -111,36 +149,7 @@ static void fork_parent(void)
 
 static void fork_child(void)
 {
-    int err;
-
-    /* rwlock, saves TID internally, so we need to reset
-     * after fork in the child */
-    p11prov_force_rwlock_reinit(&ctx_pool.rwlock);
-
-    /* This is running in the fork handler, so there should be no
-     * way to have other threads running, but just in case some
-     * crazy library creates threads in their child handler */
-    err = pthread_rwlock_wrlock(&ctx_pool.rwlock);
-    if (err != 0) {
-        err = errno;
-        P11PROV_debug("Failed to get slots lock (errno:%d)", err);
-        return;
-    }
-
-    for (int i = 0; i < ctx_pool.num; i++) {
-        if (ctx_pool.contexts[i]->status == P11PROV_INITIALIZED) {
-            /* can't re-init in the fork handler, mark it */
-            ctx_pool.contexts[i]->status = P11PROV_NEEDS_REINIT;
-            p11prov_module_mark_reinit(ctx_pool.contexts[i]->module);
-            p11prov_slot_fork_reset(ctx_pool.contexts[i]->slots);
-        }
-    }
-
-    err = pthread_rwlock_unlock(&ctx_pool.rwlock);
-    if (err != 0) {
-        err = errno;
-        P11PROV_debug("Failed to release context pool (errno:%d)", err);
-    }
+   p11prov_reinit(true);
 }
 
 #define CTX_POOL_ALLOC 4
@@ -504,6 +513,7 @@ CK_RV p11prov_ctx_status(P11PROV_CTX *ctx)
         ctx->status = P11PROV_INITIALIZED;
         break;
     case P11PROV_INITIALIZED:
+    case P11PROV_DEINIT:
     case P11PROV_NO_DEINIT:
         ret = CKR_OK;
         break;
@@ -538,6 +548,8 @@ static void p11prov_ctx_free(P11PROV_CTX *ctx)
 
     if (ctx->no_deinit) {
         ctx->status = P11PROV_NO_DEINIT;
+    } else {
+        ctx->status = P11PROV_DEINIT;
     }
 
     OPENSSL_free(ctx->op_digest);
