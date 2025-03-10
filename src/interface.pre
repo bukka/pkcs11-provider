@@ -18,6 +18,9 @@ BEGIN:
 #define IMPL_CALL_EPILOG(name) \
     if (ret != CKR_OK) { \
         P11PROV_debug("Error %ld returned by C_" #name, ret); \
+        if (ret == CKR_DEVICE_ERROR || ret == CKR_DEVICE_REMOVED) { \
+            p11prov_reinit(); \
+        } \
     } \
     return ret;
 #define IMPL_INTERFACE_FN_1_ARG(name, t1, a1) \

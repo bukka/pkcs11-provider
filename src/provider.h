@@ -91,6 +91,8 @@ typedef struct p11prov_obj_pool P11PROV_OBJ_POOL;
 #endif
 #endif
 
+/* Reinint provider */
+void p11prov_reinit(void);
 /* Provider ctx */
 P11PROV_INTERFACE *p11prov_ctx_get_interface(P11PROV_CTX *ctx);
 CK_UTF8CHAR_PTR p11prov_ctx_pin(P11PROV_CTX *ctx);
