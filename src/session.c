@@ -148,7 +148,7 @@ CK_RV p11prov_session_pool_init(P11PROV_CTX *ctx, CK_TOKEN_INFO *token,
         pool->max_cached_sessions = pool->max_sessions - 1;
     }
 
-    P11PROV_debug("New session pool %p created", pool);
+    P11PROV_debug("New session pool %p for slot %lu created", pool, id);
 
     *_pool = pool;
     return CKR_OK;
@@ -359,11 +359,11 @@ static void session_free(P11PROV_SESSION *session)
     bool abandon = true;
     int ret;
 
-    P11PROV_debug("Session Free %p", session);
-
     if (session == NULL) {
         return;
     }
+
+    P11PROV_debug("Session Free %lu", session->session);
 
     ret = MUTEX_LOCK(session);
     /* LOCKED SECTION ------------- */
@@ -412,7 +412,8 @@ static int p11prov_session_prompt_for_pin(struct p11prov_slot *slot,
     const char *login_info = p11prov_slot_get_login_info(slot);
     int ret;
 
-    P11PROV_debug("Starting internal PIN prompt slot=%p", slot);
+    P11PROV_debug("Starting internal PIN prompt slot=%lu",
+                  p11prov_slot_get_slot_id(slot));
 
     if (ui == NULL) {
         ret = RET_OSSL_ERR;
@@ -485,8 +486,8 @@ static CK_RV token_login(P11PROV_SESSION *session, P11PROV_URI *uri,
     bool cache = false;
     CK_RV ret;
 
-    P11PROV_debug("Log into the token session=%p uri=%p slot=%p type=%lu",
-                  session, uri, slot, user_type);
+    P11PROV_debug("Log into the token session=%p uri=%p slot=%lu type=%lu",
+                  session, uri, p11prov_slot_get_slot_id(slot), user_type);
 
     token = p11prov_slot_get_token(slot);
     if (!(token->flags & CKF_PROTECTED_AUTHENTICATION_PATH)) {
@@ -599,8 +600,8 @@ CK_RV p11prov_context_specific_login(P11PROV_SESSION *session, P11PROV_URI *uri,
     P11PROV_SLOT *slot = NULL;
     CK_RV ret;
 
-    P11PROV_debug("Providing context specific login session=%p uri=%p", session,
-                  uri);
+    P11PROV_debug("Providing context specific login session=%lu uri=%p",
+                  session->session, uri);
 
     ret = p11prov_take_slots(session->provctx, &sctx);
     if (ret != CKR_OK) {
@@ -784,7 +785,8 @@ static CK_RV slot_login(P11PROV_SLOT *slot, P11PROV_URI *uri,
     int num_open_sessions = 0;
     CK_RV ret;
 
-    P11PROV_debug("Slot login (slot=%p, uri=%p)", slot, uri);
+    P11PROV_debug("Slot login (slot=%lu, uri=%p)",
+                  p11prov_slot_get_slot_id(slot), uri);
 
     /* try to get a login_session */
     ret = fetch_session(pool, flags, true, &session);
