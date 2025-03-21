@@ -3418,6 +3418,15 @@ static CK_RV return_dup_key(P11PROV_OBJ *dst, P11PROV_OBJ *src)
     dst->cka_token = src->cka_token;
     dst->data.key = src->data.key;
 
+    /* Copy refresh URI */
+    if (dst->refresh_uri) {
+        p11prov_uri_free(dst->refresh_uri);
+        dst->refresh_uri = NULL;
+    }
+    if (src->refresh_uri) {
+        dst->refresh_uri = p11prov_copy_uri(src->refresh_uri);
+    }
+
     /* Free existing attributes if any */
     for (int i = 0; i < dst->numattrs; i++) {
         OPENSSL_free(dst->attrs[i].pValue);
