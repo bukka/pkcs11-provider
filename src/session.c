@@ -561,7 +561,8 @@ static CK_RV token_login(P11PROV_SESSION *session, P11PROV_URI *uri,
         goto done;
     }
 
-    P11PROV_debug("Attempt Login on session %lu", session->session);
+    P11PROV_debug("Attempt Login on session %lu (slot=%lu, pin=%s) ",
+                  session->session, session->slotid, (const char *) pin);
     /* Supports only USER login sessions for now */
     ret = p11prov_Login(session->provctx, session->session, user_type, pin,
                         pinlen);
