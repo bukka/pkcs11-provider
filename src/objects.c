@@ -1283,6 +1283,12 @@ P11PROV_OBJ *p11prov_obj_find_associated(P11PROV_OBJ *obj,
     template[1] = *id;
 
     slotid = p11prov_obj_get_slotid(obj);
+    if (slotid == CK_UNAVAILABLE_INFORMATION) {
+        P11PROV_SLOTS_CTX *slots = p11prov_ctx_get_slots(obj->ctx);
+        if (slots) {
+            slotid = p11prov_get_default_slot(slots);
+        }
+    }
 
     ret = p11prov_get_session(obj->ctx, &slotid, NULL, NULL,
                               CK_UNAVAILABLE_INFORMATION, NULL, NULL, true,
