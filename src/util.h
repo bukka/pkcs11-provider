@@ -66,6 +66,7 @@ char *p11prov_uri_get_serial(P11PROV_URI *uri);
 char *p11prov_uri_get_pin(P11PROV_URI *uri);
 CK_SLOT_ID p11prov_uri_get_slot_id(P11PROV_URI *uri);
 void p11prov_uri_set_slot_id(P11PROV_URI *uri, CK_SLOT_ID slot_id);
+void p11prov_uri_set_slot_type(P11PROV_URI *uri, CK_OBJECT_CLASS type);
 P11PROV_URI *p11prov_copy_uri(P11PROV_URI *uri);
 CK_RV p11prov_uri_match_token(P11PROV_URI *uri, CK_SLOT_ID slot_id,
                               CK_SLOT_INFO *slot, CK_TOKEN_INFO *token);

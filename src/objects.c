@@ -1327,6 +1327,18 @@ P11PROV_OBJ *p11prov_obj_find_associated(P11PROV_OBJ *obj,
         P11PROV_raise(obj->ctx, ret, "Failed to get object from handle");
     }
 
+    /* copy uri and set the type to the supplied class */
+    if (obj->refresh_uri != NULL) {
+        retobj->refresh_uri = p11prov_copy_uri(obj->refresh_uri);
+        if (retobj->refresh_uri == NULL) {
+            P11PROV_raise(obj->ctx, ret,
+                          "Failed to copy URI of the associated object");
+        } else {
+            p11prov_uri_set_slot_type(retobj->refresh_uri, class);
+            P11PROV_debug("Associated object URI copied");
+        }
+    }
+
     /* associate it so we do not have to search again on repeat calls */
     if (retobj && obj->assoc_obj == NULL) {
         obj->assoc_obj = p11prov_obj_ref_no_cache(retobj);

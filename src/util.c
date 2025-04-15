@@ -862,6 +862,11 @@ void p11prov_uri_set_slot_id(P11PROV_URI *uri, CK_SLOT_ID slot_id)
     uri->slot_id = slot_id;
 }
 
+void p11prov_uri_set_slot_type(P11PROV_URI *uri, CK_OBJECT_CLASS type)
+{
+    uri->type = type;
+}
+
 P11PROV_URI *p11prov_copy_uri(P11PROV_URI *uri)
 {
     P11PROV_URI *cu;
