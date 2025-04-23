@@ -411,7 +411,8 @@ static void cache_key(P11PROV_OBJ *obj)
     ret = p11prov_CopyObject(obj->ctx, sess, obj_handle, template, 1,
                              &obj->cached);
     if (ret != CKR_OK) {
-        P11PROV_raise(obj->ctx, ret, "Failed to cache key");
+        P11PROV_raise(obj->ctx, ret, "Failed to cache key %lu:%lu",
+                      obj->slotid, obj->handle);
         if (ret == CKR_FUNCTION_NOT_SUPPORTED) {
             can_cache = CK_FALSE;
             ret = supports_caching(obj->ctx, obj->slotid, SET_ATTR, &can_cache);
