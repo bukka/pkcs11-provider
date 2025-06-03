@@ -45,6 +45,18 @@ conf.set_quoted('PACKAGE_NAME', meson.project_name())
 conf.set('PACKAGE_MAJOR', major_version)
 conf.set('PACKAGE_MINOR', minor_version)
 
+# Add git commit hash for debug builds
+if import('fs').is_dir('.git')
+  git_prog = find_program('git', required: false)
+  if git_prog.found()
+    git_commit_result = run_command(git_prog, 'rev-parse', 'HEAD', check: false)
+    if git_commit_result.returncode() == 0
+      git_commit = git_commit_result.stdout().strip()
+      conf.set_quoted('PACKAGE_GIT_COMMIT', git_commit)
+    endif
+  endif
+endif
+
 libcrypto = dependency('libcrypto', version: '>= 3.0.7')
 provider_path = libcrypto.get_variable(pkgconfig: 'modulesdir')
 libssl = dependency('libssl', version: '>= 3.0.7')

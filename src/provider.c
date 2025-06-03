@@ -1486,6 +1486,9 @@ int OSSL_provider_init(const OSSL_CORE_HANDLE *handle, const OSSL_DISPATCH *in,
 
     P11PROV_debug("Starting provider %s %d.%d", PACKAGE_NAME, PACKAGE_MAJOR,
                   PACKAGE_MINOR);
+#ifdef PACKAGE_GIT_COMMIT
+    P11PROV_debug("Provider commit hash: %s", PACKAGE_GIT_COMMIT);
+#endif
 
     ret = pthread_rwlock_init(&ctx->quirk_lock, NULL);
     if (ret != 0) {
