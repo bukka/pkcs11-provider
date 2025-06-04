@@ -3438,7 +3438,8 @@ static CK_RV return_dup_key(P11PROV_OBJ *dst, P11PROV_OBJ *src)
                   dst, src, src->handle, src->slotid, src->raf, src->numattrs);
 
     dst->slotid = src->slotid;
-    dst->handle = src->handle;
+    dst->handle = p11prov_obj_get_handle(src);
+    dst->imported = src->imported;
     dst->class = src->class;
     dst->cka_copyable = src->cka_copyable;
     dst->cka_token = src->cka_token;
