@@ -163,7 +163,7 @@ void hexify(char *out, unsigned char *byte, size_t len)
     out[len * 3] = '\0';
 }
 
-EVP_PKEY *util_gen_key(const char *label)
+EVP_PKEY *util_gen_key_ex(const char *label, char **ret_uri)
 {
     unsigned char id[16];
     char idhex[16 * 3 + 1];
@@ -213,6 +213,15 @@ EVP_PKEY *util_gen_key(const char *label)
         exit(EXIT_FAILURE);
     }
 
-    free(uri);
+    if (ret_uri) {
+        *ret_uri = uri;
+    } else {
+        free(uri);
+    }
     return key;
+}
+
+EVP_PKEY *util_gen_key(const char *label)
+{
+    return util_gen_key_ex(label, NULL);
 }
