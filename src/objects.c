@@ -1487,6 +1487,9 @@ done:
 
 CK_RV p11prov_obj_refresh_invalid(P11PROV_OBJ *obj)
 {
+    P11PROV_debug("Refreshing invalid object (obj=%p, handle=%lu, slot=%lu, "
+                  "raf=%d, dup=%d, refcnt=%d)", obj, obj->handle, obj->slotid,
+                  obj->raf, obj->dup, obj->refcnt);
     obj->handle = CK_INVALID_HANDLE;
     obj->cached = CK_INVALID_HANDLE;
     p11prov_obj_refresh(obj);
