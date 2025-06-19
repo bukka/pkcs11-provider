@@ -326,6 +326,8 @@ void p11prov_slot_fork_reset(P11PROV_SLOTS_CTX *sctx)
     for (int i = 0; i < sctx->num; i++) {
         P11PROV_SLOT *slot = sctx->slots[i];
 
+        P11PROV_debug("Resetting slot (slotid=%lu)", slot->id);
+
         /* invalidate all sessions */
         p11prov_session_pool_fork_reset(slot->pool);
 

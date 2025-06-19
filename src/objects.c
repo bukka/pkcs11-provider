@@ -138,6 +138,8 @@ void p11prov_obj_pool_fork_reset(P11PROV_OBJ_POOL *pool)
             if (!obj) {
                 continue;
             }
+            P11PROV_debug("Resetting object (pool=%p, obj=%p, handle=%lu, dup=%d)",
+                          pool, obj, obj->handle, obj->dup);
             obj->raf = true;
             obj->handle = CK_INVALID_HANDLE;
             obj->cached = CK_INVALID_HANDLE;
@@ -215,8 +217,8 @@ done:
     /* ------------- LOCKED SECTION */
 
     if (ret == CKR_OK) {
-        P11PROV_debug("Object added to pool (idx=%d, obj=%p)", obj->poolid,
-                      obj);
+        P11PROV_debug("Object added to pool (idx=%d, obj=%p, handle=%lu)",
+                      obj->poolid, obj, obj->handle);
     }
 
     return ret;
@@ -238,8 +240,8 @@ static void obj_rm_from_pool(P11PROV_OBJ *obj)
         return;
     }
 
-    P11PROV_debug("Object to be removed from pool (idx=%d, obj=%p)",
-                  obj->poolid, obj);
+    P11PROV_debug("Object to be removed from pool (idx=%d, obj=%p, handle=%lu)",
+                  obj->poolid, obj, obj->handle);
 
     ret = MUTEX_LOCK(pool);
     if (ret != CKR_OK) {
@@ -433,8 +435,9 @@ static void cache_key(P11PROV_OBJ *obj)
 
 P11PROV_OBJ *p11prov_obj_ref_no_cache(P11PROV_OBJ *obj)
 {
-    P11PROV_debug("Ref Object: %p (handle:%lu)", obj,
-                  obj ? obj->handle : CK_INVALID_HANDLE);
+    P11PROV_debug("Ref Object: %p (handle:%lu, count=%d)", obj,
+                  obj ? obj->handle : CK_INVALID_HANDLE,
+                  obj ? obj->refcnt : -1);
 
     if (obj && __atomic_fetch_add(&obj->refcnt, 1, __ATOMIC_SEQ_CST) > 0) {
         return obj;
@@ -464,8 +467,9 @@ P11PROV_OBJ *p11prov_obj_ref(P11PROV_OBJ *obj)
 
 void p11prov_obj_free(P11PROV_OBJ *obj)
 {
-    P11PROV_debug("Free Object: %p (handle:%lu)", obj,
-                  obj ? obj->handle : CK_INVALID_HANDLE);
+    P11PROV_debug("Free Object: %p (handle:%lu, count=%d)", obj,
+                  obj ? obj->handle : CK_INVALID_HANDLE,
+                  obj ? obj->refcnt : -1);
 
     if (obj == NULL) {
         return;
