@@ -1404,6 +1404,8 @@ static void p11prov_obj_refresh(P11PROV_OBJ *obj)
         if (ret != CKR_OK) {
             P11PROV_raise(obj->ctx, ret,
                           "Failed to refresh imported object %p", obj);
+        } else {
+            obj->dup = false;
         }
         goto done;
     }
