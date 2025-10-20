@@ -521,7 +521,9 @@ CK_RV p11prov_ctx_status(P11PROV_CTX *ctx)
         ret = p11prov_module_reinit(ctx->module);
         if (ret != CKR_OK) {
             P11PROV_raise(ctx, ret, "Module re-initialization failed!");
-            ctx->status = P11PROV_IN_ERROR;
+            if (ret != CKR_DEVICE_ERROR && ret != CKR_DEVICE_REMOVED) {
+                ctx->status = P11PROV_IN_ERROR;
+            }
             break;
         }
         ctx->status = P11PROV_INITIALIZED;
