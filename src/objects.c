@@ -1376,7 +1376,7 @@ static void p11prov_obj_refresh(P11PROV_OBJ *obj)
     P11PROV_OBJ *tmp = NULL;
     CK_RV ret;
 
-    P11PROV_debug("Refresh object %p", obj);
+    P11PROV_debug("Refresh object %p, class=%lu", obj, obj->class);
 
     if (obj->class == CKO_PRIVATE_KEY) {
         login = true;

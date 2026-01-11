@@ -5,6 +5,7 @@
 #define _POSIX_C_SOURCE 200809L
 #include "provider.h"
 #include <string.h>
+#include <unistd.h>
 
 int debug_level = -1;
 static FILE *stddebug = NULL;
@@ -77,7 +78,7 @@ void p11prov_debug(const char *file, int line, const char *func,
     localtime_r(&ts.tv_sec, &tm_info);
     strftime(timebuf, sizeof(timebuf), "%Y-%m-%d %H:%M:%S", &tm_info);
 
-    fprintf(stddebug, "[%s.%03ld] ", timebuf, ts.tv_nsec / 1000000);
+    fprintf(stddebug, "[%s.%03ld] [%d] ", timebuf, ts.tv_nsec / 1000000, (int)getpid());
 
     if (file) {
         fprintf(stddebug, "[%s:%d] ", file, line);
