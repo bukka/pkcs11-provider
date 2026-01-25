@@ -1406,6 +1406,7 @@ static void p11prov_obj_refresh(P11PROV_OBJ *obj)
                           "Failed to refresh imported object %p", obj);
         } else {
             obj->dup = false;
+            obj->raf = false;
         }
         goto done;
     }
