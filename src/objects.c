@@ -465,6 +465,43 @@ P11PROV_OBJ *p11prov_obj_ref(P11PROV_OBJ *obj)
     return obj;
 }
 
+static void destroy_object_handle(P11PROV_OBJ *obj)
+{
+    P11PROV_SESSION *session = NULL;
+    CK_SESSION_HANDLE sess;
+    CK_RV ret;
+
+    /* Only destroy handles for objects we created ourselves on the token. */
+    if (!obj->imported || obj->dup) {
+        return;
+    }
+    if (obj->handle == CK_INVALID_HANDLE
+        || obj->handle == CK_P11PROV_IMPORTED_HANDLE) {
+        return;
+    }
+    if (obj->slotid == CK_UNAVAILABLE_INFORMATION) {
+        return;
+    }
+
+    ret = p11prov_take_login_session(obj->ctx, obj->slotid, obj->refresh_uri,
+                                     &session);
+    if (ret != CKR_OK) {
+        P11PROV_debug("Failed to get login session to destroy handle. "
+                        "Error %lx", ret);
+        return;
+    }
+    sess = p11prov_session_handle(session);
+
+    ret = p11prov_DestroyObject(obj->ctx, sess, obj->handle);
+    if (ret != CKR_OK) {
+        P11PROV_debug("Failed to destroy imported object handle. Error %lx",
+                      ret);
+    }
+    obj->handle = CK_INVALID_HANDLE;
+
+    p11prov_return_session(session);
+}
+
 void p11prov_obj_free(P11PROV_OBJ *obj)
 {
     P11PROV_debug("Free Object: %p (handle:%lu, count=%d)", obj,
@@ -482,6 +519,7 @@ void p11prov_obj_free(P11PROV_OBJ *obj)
     obj_rm_from_pool(obj);
 
     destroy_key_cache(obj, NULL);
+    destroy_object_handle(obj);
 
     for (int i = 0; i < obj->numattrs; i++) {
         OPENSSL_free(obj->attrs[i].pValue);
