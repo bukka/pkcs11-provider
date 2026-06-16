@@ -26,6 +26,22 @@ rm -f "${TMPPDIR}/s_server_output"
 rm -f "${TMPPDIR}/s_server_ready"
 mkfifo "${TMPPDIR}/s_server_ready"
 
+# dump any provider debug logs we have collected so far; safe to call multiple
+# times and on any exit path
+dump_debug_logs() {
+    echo "=== DEBUG: dumping pkcs11-provider logs ==="
+    for log in "${TMPPDIR}/p11prov-debug-tls-server.log" \
+               "${TMPPDIR}/p11prov-debug-tls-client.log"; do
+        echo "--- $log ---"
+        if [ -s "$log" ]; then
+            cat "$log"
+        else
+            echo "(empty or missing)"
+        fi
+    done
+    echo "=== DEBUG: end of pkcs11-provider logs ==="
+}
+
 SERVER_PID=-1
 # Make sure we terminate programs if test fails in the middle
 # shellcheck disable=SC2317  # Shellcheck for some reason does not follow trap
@@ -34,7 +50,14 @@ wait_for_server_at_exit() {
     echo "Server output:"
     cat "${TMPPDIR}/s_server_output"
 }
-trap 'wait_for_server_at_exit $SERVER_PID;' EXIT
+# shellcheck disable=SC2317
+on_exit() {
+    rc=$?
+    echo "=== DEBUG: EXIT trap (rc=$rc, last test: ${CURRENT_TEST:-none}) ==="
+    wait_for_server_at_exit "$SERVER_PID"
+    dump_debug_logs
+}
+trap 'on_exit' EXIT
 
 PORT=23456
 
@@ -43,6 +66,15 @@ run_test() {
     CERT="$2"
     SRV_ARGS=$3
     CLNT_ARGS=$4
+
+    echo "=== DEBUG: starting test '${CURRENT_TEST:-unnamed}' ==="
+    echo "=== DEBUG:   KEY=$KEY"
+    echo "=== DEBUG:   CERT=$CERT"
+    echo "=== DEBUG:   SRV_ARGS=$SRV_ARGS CLNT_ARGS=$CLNT_ARGS PROPQ=$PROPQ"
+
+    # fresh logs per run so we attribute output to the right test
+    rm -f "${TMPPDIR}/p11prov-debug-tls-server.log" \
+          "${TMPPDIR}/p11prov-debug-tls-client.log"
 
     export PKCS11_PROVIDER_DEBUG="file:${TMPPDIR}/p11prov-debug-tls-server.log"
     expect -c "spawn $CHECKER $OPENSSL s_server $PROPQ -accept \"${PORT}\" -naccept 1 -key \"${KEY}\" -cert \"${CERT}\" $SRV_ARGS;
@@ -79,8 +111,27 @@ run_test() {
             };
         }" &> "${TMPPDIR}/s_server_output" &
     SERVER_PID=$!
+    echo "=== DEBUG: spawned s_server pid=$SERVER_PID, waiting for READY ==="
 
-    read -r < "${TMPPDIR}/s_server_ready"
+    # Bounded wait for the server to signal readiness. Without a timeout, a
+    # server that dies before writing READY (e.g. it hung loading a key from
+    # the token) leaves this read blocking forever until the harness SIGTERMs
+    # the whole test, hiding the real cause. Fail fast and dump diagnostics.
+    if ! read -r -t 30 < "${TMPPDIR}/s_server_ready"; then
+        echo "=== DEBUG: SERVER NEVER BECAME READY for '${CURRENT_TEST:-unnamed}' ==="
+        echo "=== DEBUG: server process state: ==="
+        if kill -0 "$SERVER_PID" 2>/dev/null; then
+            echo "server pid=$SERVER_PID still alive (hung before ACCEPT?)"
+            kill -TERM "$SERVER_PID" 2>/dev/null || :
+        else
+            echo "server pid=$SERVER_PID already exited"
+        fi
+        echo "=== DEBUG: s_server output so far: ==="
+        cat "${TMPPDIR}/s_server_output" 2>/dev/null || echo "(none)"
+        dump_debug_logs
+        exit 1
+    fi
+    echo "=== DEBUG: server READY, spawning client ==="
 
     export PKCS11_PROVIDER_DEBUG="file:${TMPPDIR}/p11prov-debug-tls-client.log"
     expect -c "spawn $CHECKER $OPENSSL s_client $PROPQ -connect \"localhost:${PORT}\" -CAfile \"${CACRT}\" $CLNT_ARGS;
@@ -101,54 +152,75 @@ run_test() {
                 send \" NO EOF \n\";
                 exit 1;
             };
-        }" || (wait_for_server_at_exit $SERVER_PID; exit 1; )
+        }"
+    CLIENT_RC=$?
+    echo "=== DEBUG: client exited rc=$CLIENT_RC for '${CURRENT_TEST:-unnamed}' ==="
+    if [ "$CLIENT_RC" -ne 0 ]; then
+        echo "=== DEBUG: client FAILED (rc=$CLIENT_RC), dumping diagnostics ==="
+        wait_for_server_at_exit "$SERVER_PID"
+        dump_debug_logs
+        exit 1
+    fi
 
-    wait_for_server_at_exit $SERVER_PID
+    wait_for_server_at_exit "$SERVER_PID"
+    echo "=== DEBUG: test '${CURRENT_TEST:-unnamed}' completed OK ==="
 }
 
 run_tests() {
 
+    CURRENT_TEST="RSA"
     title PARA "Run sanity test with default values (RSA)"
     run_test "$PRIURI" "$CRTURI"
 
     if [[ -n "$RSAPSSBASEURI" ]]; then
+        CURRENT_TEST="RSA-PSS"
         title PARA "Run sanity test with default values (RSA-PSS)"
         run_test "$RSAPSSPRIURI" "$RSAPSSCRTURI"
 
+        CURRENT_TEST="RSA-PSS-SHA256"
         title PARA "Run sanity test with RSA-PSS and SHA256"
         run_test "$RSAPSS2PRIURI" "$RSAPSS2CRTURI"
     fi
 
+    CURRENT_TEST="ECDSA"
     title PARA "Run sanity test with default values (ECDSA)"
     run_test "$ECPRIURI" "$ECCRTURI"
 
     if [[ -n "$EDBASEURI" ]]; then
+        CURRENT_TEST="Ed25519"
         title PARA "Run sanity test with default values (Ed25519)"
         run_test "$EDPRIURI" "$EDCRTURI"
     fi
 
     if [[ -n "$ED2BASEURI" ]]; then
+        CURRENT_TEST="Ed448"
         title PARA "Run sanity test with default values (Ed448)"
         run_test "$ED2PRIURI" "$ED2CRTURI"
     fi
 
     if [[ -n "$MLDSABASEURI" ]]; then
+        CURRENT_TEST="ML-DSA"
         title PARA "Run sanity test with default values (ML-DSA)"
         run_test "$MLDSAPRIURI" "$MLDSACRTURI"
     fi
 
+    CURRENT_TEST="TLS1.2"
     title PARA "Run test with TLS 1.2"
     run_test "$PRIURI" "$CRTURI" "" "-tls1_2"
 
+    CURRENT_TEST="TLS1.3"
     title PARA "Run test with explicit TLS 1.3"
     run_test "$PRIURI" "$CRTURI" "" "-tls1_3"
 
+    CURRENT_TEST="TLS1.2-ECDSA"
     title PARA "Run test with TLS 1.2 (ECDSA)"
     run_test "$ECPRIURI" "$ECCRTURI" "-tls1_2" "-tls1_2"
 
+    CURRENT_TEST="TLS1.2-ECDH"
     title PARA "Run test with TLS 1.2 and ECDH"
     run_test "$ECPRIURI" "$ECCRTURI" "" "-tls1_2 -cipher ECDHE-ECDSA-AES128-GCM-SHA256 -groups secp256r1"
 
+    CURRENT_TEST="TLS1.3-suite"
     title PARA "Run test with TLS 1.3 and specific suite"
     run_test "$ECPRIURI" "$ECCRTURI" "" "-tls1_3 -ciphersuites TLS_AES_256_GCM_SHA384 -groups secp256r1"
 }
