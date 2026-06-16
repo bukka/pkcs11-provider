@@ -77,7 +77,11 @@ run_test() {
           "${TMPPDIR}/p11prov-debug-tls-client.log"
 
     export PKCS11_PROVIDER_DEBUG="file:${TMPPDIR}/p11prov-debug-tls-server.log"
-    expect -c "spawn $CHECKER $OPENSSL s_server $PROPQ -accept \"${PORT}\" -naccept 1 -key \"${KEY}\" -cert \"${CERT}\" $SRV_ARGS;
+    # Hard cap the whole server expect under `timeout` so a startup hang (e.g.
+    # s_server blocking while loading a key from the token, before it ever
+    # prints ACCEPT) cannot consume the entire harness budget. When timeout
+    # kills it, the FIFO writer end is closed, unblocking the parent's read.
+    timeout 15 expect -c "spawn $CHECKER $OPENSSL s_server $PROPQ -accept \"${PORT}\" -naccept 1 -key \"${KEY}\" -cert \"${CERT}\" $SRV_ARGS;
         set timeout 10;
         expect {
             \"ACCEPT\" {};
@@ -113,25 +117,37 @@ run_test() {
     SERVER_PID=$!
     echo "=== DEBUG: spawned s_server pid=$SERVER_PID, waiting for READY ==="
 
-    # Bounded wait for the server to signal readiness. Without a timeout, a
-    # server that dies before writing READY (e.g. it hung loading a key from
-    # the token) leaves this read blocking forever until the harness SIGTERMs
-    # the whole test, hiding the real cause. Fail fast and dump diagnostics.
-    if ! read -r -t 30 < "${TMPPDIR}/s_server_ready"; then
+    # Wait for the server to signal readiness, but DO NOT rely on `read -t`
+    # against the FIFO: opening a FIFO for read blocks until a writer appears,
+    # and bash's read timeout does not cover that blocking open(). If the server
+    # exits before reaching its `open ... w+` (e.g. it fails/aborts while loading
+    # the key from the token), there is never a writer, the parent wedges in
+    # open() forever, and only the outer harness SIGTERM ends it -- which is
+    # exactly what hid the RSA-PSS failure. `timeout` wrapping `cat` sends a
+    # signal that interrupts the blocking open, so we always get here.
+    server_ready_data=""
+    if server_ready_data=$(timeout 18 cat "${TMPPDIR}/s_server_ready" 2>/dev/null) \
+       && [ -n "$server_ready_data" ]; then
+        echo "=== DEBUG: server READY, spawning client ==="
+    else
         echo "=== DEBUG: SERVER NEVER BECAME READY for '${CURRENT_TEST:-unnamed}' ==="
         echo "=== DEBUG: server process state: ==="
         if kill -0 "$SERVER_PID" 2>/dev/null; then
             echo "server pid=$SERVER_PID still alive (hung before ACCEPT?)"
             kill -TERM "$SERVER_PID" 2>/dev/null || :
         else
-            echo "server pid=$SERVER_PID already exited"
+            echo "server pid=$SERVER_PID already exited (likely errored at startup)"
         fi
-        echo "=== DEBUG: s_server output so far: ==="
+        # reap the (timeout-wrapped) server and report how it died: 124 means
+        # `timeout 15` killed it (genuine hang); any other code means s_server
+        # returned on its own, e.g. it could not load the key/cert
+        wait "$SERVER_PID"; srv_rc=$?
+        echo "=== DEBUG: server wrapper exit=$srv_rc (124 => killed by timeout/hung; else s_server exited on its own) ==="
+        echo "=== DEBUG: full s_server output: ==="
         cat "${TMPPDIR}/s_server_output" 2>/dev/null || echo "(none)"
         dump_debug_logs
         exit 1
     fi
-    echo "=== DEBUG: server READY, spawning client ==="
 
     export PKCS11_PROVIDER_DEBUG="file:${TMPPDIR}/p11prov-debug-tls-client.log"
     expect -c "spawn $CHECKER $OPENSSL s_client $PROPQ -connect \"localhost:${PORT}\" -CAfile \"${CACRT}\" $CLNT_ARGS;
