@@ -867,7 +867,8 @@ done:
 #define LOCK_SLEEP 5000
 static CK_RV slot_login(P11PROV_SLOT *slot, P11PROV_URI *uri,
                         OSSL_PASSPHRASE_CALLBACK *pw_cb, void *pw_cbarg,
-                        bool reqlogin, P11PROV_SESSION **_session)
+                        enum p11prov_login_request login,
+                        P11PROV_SESSION **_session)
 {
     P11PROV_SESSION_POOL *pool = p11prov_slot_get_session_pool(slot);
     P11PROV_SESSION *session = NULL;
@@ -884,7 +885,7 @@ static CK_RV slot_login(P11PROV_SLOT *slot, P11PROV_URI *uri,
     }
 
     if (ret != CKR_OK) {
-        if (reqlogin) {
+        if (login == LOGIN_REQUIRED) {
             /* try a few times to get a login session,
              * but eventually timeout if it doesn't work to avoid deadlocks */
             uint64_t startime = 0;
@@ -909,6 +910,10 @@ static CK_RV slot_login(P11PROV_SLOT *slot, P11PROV_URI *uri,
     }
 
     if (session->session == CK_INVALID_HANDLE) {
+        if (login == LOGIN_ONLY_CACHED) {
+            ret = CKR_USER_NOT_LOGGED_IN;
+            goto done;
+        }
         ret = token_session_open(session, flags);
         if (ret != CKR_OK) {
             goto done;
@@ -918,6 +923,9 @@ static CK_RV slot_login(P11PROV_SLOT *slot, P11PROV_URI *uri,
     if (is_login_state(session->state)) {
         /* we seem to already have a valid logged in session */
         ret = CKR_OK;
+    } else if (login == LOGIN_ONLY_CACHED) {
+        /* caller only wants an already logged in session */
+        ret = CKR_USER_NOT_LOGGED_IN;
     } else {
         ret = token_login(session, uri, pw_cb, pw_cbarg, slot,
                           p11prov_ctx_user_type(session->provctx));
@@ -989,6 +997,8 @@ CK_RV p11prov_get_session(P11PROV_CTX *provctx, CK_SLOT_ID *slotid,
     CK_SLOT_ID id = *slotid;
     P11PROV_SESSION *session = NULL;
     CK_FLAGS flags = DEFLT_SESSION_FLAGS;
+    enum p11prov_login_request login =
+        reqlogin ? LOGIN_REQUIRED : LOGIN_NOT_REQUIRED;
     int slot_idx;
     CK_RV ret;
 
@@ -1019,7 +1029,7 @@ CK_RV p11prov_get_session(P11PROV_CTX *provctx, CK_SLOT_ID *slotid,
             goto done;
         }
         if (needs_login(provctx, slot, reqlogin)) {
-            ret = slot_login(slot, uri, pw_cb, pw_cbarg, reqlogin, NULL);
+            ret = slot_login(slot, uri, pw_cb, pw_cbarg, login, NULL);
             if (ret != CKR_OK) {
                 goto done;
             }
@@ -1053,7 +1063,7 @@ CK_RV p11prov_get_session(P11PROV_CTX *provctx, CK_SLOT_ID *slotid,
                 continue;
             }
             if (needs_login(provctx, slot, reqlogin)) {
-                ret = slot_login(slot, uri, pw_cb, pw_cbarg, reqlogin, NULL);
+                ret = slot_login(slot, uri, pw_cb, pw_cbarg, login, NULL);
                 if (ret != CKR_OK) {
                     /* keep going */
                     continue;
@@ -1201,6 +1211,7 @@ CK_RV p11prov_try_session_ref(P11PROV_OBJ *obj, CK_MECHANISM_TYPE mechtype,
 }
 
 CK_RV p11prov_take_login_session(P11PROV_CTX *provctx, CK_SLOT_ID slotid,
+                                 enum p11prov_login_request login,
                                  P11PROV_SESSION **_session)
 {
     P11PROV_SLOTS_CTX *slots = NULL;
@@ -1227,7 +1238,7 @@ CK_RV p11prov_take_login_session(P11PROV_CTX *provctx, CK_SLOT_ID slotid,
         goto done;
     }
 
-    ret = slot_login(slot, NULL, NULL, NULL, false, _session);
+    ret = slot_login(slot, NULL, NULL, NULL, login, _session);
 
 done:
     p11prov_return_slots(slots);
