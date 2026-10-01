@@ -2,6 +2,7 @@
    SPDX-License-Identifier: Apache-2.0 */
 
 #include "provider.h"
+#include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -153,6 +154,60 @@ struct p11prov_uri {
     char *pin;
 };
 
+static bool is_p11_char(unsigned char c)
+{
+    if (isalnum(c)) {
+        return true;
+    }
+
+    switch (c) {
+    case '-':
+    case '.':
+    case '_':
+    case '~':
+    case '!':
+    case '$':
+    case '&':
+    case '\'':
+    case '(':
+    case ')':
+    case '*':
+    case '+':
+    case ',':
+    case ';':
+    case '=':
+    case ':':
+    case '@':
+    case '?':
+    case '/':
+        return true;
+    default:
+        /* anything outside of the above list is not allowed, including
+         * multi-byte UTF-8 characters. They need to be percent-encoded */
+        return false;
+    }
+}
+
+static bool valid_uri_str(const char *uri)
+{
+    const char *p = uri;
+
+    while (*p) {
+        if (*p == '%') {
+            if (!isxdigit((unsigned char)p[1])
+                || !isxdigit((unsigned char)p[2])) {
+                return false;
+            }
+            p += 3;
+        } else if (is_p11_char((unsigned char)*p)) {
+            p++;
+        } else {
+            return false;
+        }
+    }
+    return true;
+}
+
 static int hex_to_byte(const char *in, unsigned char *byte)
 {
     char c[2], s;
@@ -203,11 +258,14 @@ static int parse_attr(const char *str, size_t len, uint8_t **output,
             index++;
             str += 3;
             len -= 3;
-        } else {
+        } else if (is_p11_char((unsigned char)*str)) {
             out[index] = *str;
             index++;
             str++;
             len--;
+        } else {
+            ret = EINVAL;
+            goto done;
         }
     }
 
@@ -517,6 +575,13 @@ int parse_ulong(P11PROV_CTX *ctx, const char *str, size_t len, void **output)
     char *endptr;
     int ret;
 
+    for (size_t i = 0; i < len; i++) {
+        if (!isdigit((unsigned char)str[i])) {
+            ret = EINVAL;
+            goto done;
+        }
+    }
+
     errno = 0;
     endptr = NULL;
     *val = strtoul(str, &endptr, 10);
@@ -586,6 +651,12 @@ P11PROV_URI *p11prov_parse_uri(P11PROV_CTX *ctx, const char *uri)
     P11PROV_debug("ctx=%p uri=%s)", ctx, uri);
 
     if (strncmp(uri, "pkcs11:", 7) != 0) {
+        return NULL;
+    }
+
+    if (!valid_uri_str(uri + 7)) {
+        P11PROV_raise(ctx, CKR_ARGUMENTS_BAD, "Invalid character in URI [%s]",
+                      uri);
         return NULL;
     }
 
