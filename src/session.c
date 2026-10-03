@@ -923,7 +923,8 @@ static CK_RV slot_login(P11PROV_SLOT *slot, P11PROV_URI *uri,
 
     if (ret != CKR_OK) {
         if (login == LOGIN_REQUIRED) {
-            /* try a few times to get a login session,
+            /* only wait for a busy login session when strictly required,
+             * try a few times to get a login session,
              * but eventually timeout if it doesn't work to avoid deadlocks */
             uint64_t startime = 0;
             do {
@@ -987,7 +988,8 @@ done:
     return ret;
 }
 
-static bool needs_login(P11PROV_CTX *ctx, P11PROV_SLOT *slot, bool reqlogin)
+static bool needs_login(P11PROV_CTX *ctx, P11PROV_SLOT *slot,
+                        enum p11prov_login_request login)
 {
     /* Check if provider configuration forces login for all public key operations */
     if (p11prov_ctx_login_behavior(ctx) == PUBKEY_LOGIN_ALWAYS) {
@@ -995,7 +997,7 @@ static bool needs_login(P11PROV_CTX *ctx, P11PROV_SLOT *slot, bool reqlogin)
     }
 
     /* Check if login was requested by the caller for this operation */
-    if (!reqlogin) {
+    if (login == LOGIN_NOT_REQUIRED) {
         return false;
     }
 
@@ -1026,7 +1028,8 @@ CK_RV p11prov_get_session(P11PROV_CTX *provctx, CK_SLOT_ID *slotid,
                           CK_SLOT_ID *next_slotid, P11PROV_URI *uri,
                           CK_MECHANISM_TYPE mechtype,
                           OSSL_PASSPHRASE_CALLBACK *pw_cb, void *pw_cbarg,
-                          bool reqlogin, bool rw, P11PROV_SESSION **_session)
+                          enum p11prov_login_request login, bool rw,
+                          P11PROV_SESSION **_session)
 {
     P11PROV_SLOTS_CTX *slots = NULL;
     P11PROV_SLOT *slot = NULL;
@@ -1034,13 +1037,11 @@ CK_RV p11prov_get_session(P11PROV_CTX *provctx, CK_SLOT_ID *slotid,
     CK_SLOT_ID id = *slotid;
     P11PROV_SESSION *session = NULL;
     CK_FLAGS flags = DEFLT_SESSION_FLAGS;
-    enum p11prov_login_request login =
-        reqlogin ? LOGIN_REQUIRED : LOGIN_NOT_REQUIRED;
     int slot_idx;
     CK_RV ret;
 
-    P11PROV_debug("Get session on slot %lu, reqlogin=%s, rw=%s", id,
-                  reqlogin ? "true" : "false", rw ? "true" : "false");
+    P11PROV_debug("Get session on slot %lu, login=%d, rw=%s", id, (int)login,
+                  rw ? "true" : "false");
 
     ret = p11prov_take_slots(provctx, &slots);
     if (ret != CKR_OK) {
@@ -1065,7 +1066,7 @@ CK_RV p11prov_get_session(P11PROV_CTX *provctx, CK_SLOT_ID *slotid,
         if (ret != CKR_OK) {
             goto done;
         }
-        if (needs_login(provctx, slot, reqlogin)) {
+        if (needs_login(provctx, slot, login)) {
             ret = slot_login(slot, uri, pw_cb, pw_cbarg, login, NULL);
             if (ret != CKR_OK) {
                 goto done;
@@ -1099,7 +1100,7 @@ CK_RV p11prov_get_session(P11PROV_CTX *provctx, CK_SLOT_ID *slotid,
                 /* keep going */
                 continue;
             }
-            if (needs_login(provctx, slot, reqlogin)) {
+            if (needs_login(provctx, slot, login)) {
                 ret = slot_login(slot, uri, pw_cb, pw_cbarg, login, NULL);
                 if (ret != CKR_OK) {
                     /* keep going */
@@ -1173,7 +1174,7 @@ done:
 }
 
 CK_RV p11prov_try_session_ref(P11PROV_OBJ *obj, CK_MECHANISM_TYPE mechtype,
-                              bool reqlogin, bool rw,
+                              enum p11prov_login_request login, bool rw,
                               P11PROV_SESSION **_session)
 {
     P11PROV_CTX *ctx = p11prov_obj_get_prov_ctx(obj);
@@ -1244,7 +1245,7 @@ CK_RV p11prov_try_session_ref(P11PROV_OBJ *obj, CK_MECHANISM_TYPE mechtype,
      * fallback to get a normal session */
     return p11prov_get_session(ctx, &slotid, NULL,
                                p11prov_obj_get_refresh_uri(obj), mechtype, NULL,
-                               NULL, reqlogin, rw, _session);
+                               NULL, login, rw, _session);
 }
 
 CK_RV p11prov_take_login_session(P11PROV_CTX *provctx, CK_SLOT_ID slotid,

@@ -70,8 +70,8 @@ static void destroy_owned_key(P11PROV_OBJ *obj)
         return;
     }
 
-    ret = p11prov_try_session_ref(obj, CK_UNAVAILABLE_INFORMATION, false, false,
-                                  &session);
+    ret = p11prov_try_session_ref(obj, CK_UNAVAILABLE_INFORMATION,
+                                  LOGIN_NOT_REQUIRED, false, &session);
     if (ret != CKR_OK) {
         P11PROV_debug("Failed to get session to destroy owned key. "
                       "Error %lx",
@@ -182,7 +182,7 @@ done:
 static void p11prov_obj_refresh(P11PROV_OBJ *obj)
 {
     int login_behavior;
-    bool login = false;
+    enum p11prov_login_request login = LOGIN_NOT_REQUIRED;
     P11PROV_SESSION *session = NULL;
     CK_SESSION_HANDLE sess = CK_INVALID_HANDLE;
     CK_ATTRIBUTE template[3] = { 0 };
@@ -217,11 +217,11 @@ static void p11prov_obj_refresh(P11PROV_OBJ *obj)
     }
 
     if (obj->class == CKO_PRIVATE_KEY || obj->class == CKO_SECRET_KEY) {
-        login = true;
+        login = LOGIN_REQUIRED;
     }
     login_behavior = p11prov_ctx_login_behavior(obj->ctx);
     if (login_behavior == PUBKEY_LOGIN_ALWAYS) {
-        login = true;
+        login = LOGIN_REQUIRED;
     }
 
     ret = p11prov_try_session_ref(obj, CK_UNAVAILABLE_INFORMATION, login, false,
